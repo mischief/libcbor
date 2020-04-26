@@ -548,10 +548,10 @@ dec_tab(cbor_coder *d)
 
 	f = decfuns[op];
 
-	if(f == nil)
-		sysfatal("%hhud not implemented", op);
-
-	assert(f != nil);
+	if(f == nil){
+		werrstr("type %hhud not implemented", op);
+		return nil;
+	}
 
 	return f(d);
 }
