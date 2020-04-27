@@ -1,8 +1,8 @@
 #pragma lib	"libcbor.a"
 
 enum {
-	CBOR_UINT,
-	CBOR_SINT,
+	CBOR_UINT = 0,
+	CBOR_NINT,
 	CBOR_BYTE,
 	CBOR_STRING,
 	CBOR_ARRAY,
@@ -27,10 +27,8 @@ struct cbor
 
 	union {
 		/* CBOR_UINT */
+		/* CBOR_NINT */
 		u64int	uint;
-
-		/* CBOR_SINT */
-		s64int	sint;
 
 		struct {
 			int len;
@@ -78,7 +76,8 @@ struct cbor_allocator {
 extern cbor_allocator cbor_default_allocator;
 
 cbor*	cbor_make_uint(cbor_allocator *a, u64int v);
-cbor*	cbor_make_sint(cbor_allocator *a, s64int v);
+cbor*	cbor_make_nint(cbor_allocator *a, s64int v);
+cbor*	cbor_make_int(cbor_allocator *a, s64int v);
 cbor*	cbor_make_byte(cbor_allocator *a, uchar *buf, int n);
 cbor*	cbor_make_string(cbor_allocator *a, char *buf, int n);
 cbor*	cbor_make_array(cbor_allocator *a, int len);
@@ -91,6 +90,8 @@ cbor*	cbor_make_tag(cbor_allocator *a, u64int tag, cbor *e);
 cbor*	cbor_make_null(cbor_allocator *a);
 cbor*	cbor_make_float(cbor_allocator *a, float f);
 cbor*	cbor_make_double(cbor_allocator *a, double d);
+
+int		cbor_int(cbor *c, s64int *v);
 
 void	cbor_free(cbor_allocator *a, cbor *c);
 cbor*	cbor_decode(cbor_allocator *alloc, uchar *buf, ulong n);

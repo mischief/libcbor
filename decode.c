@@ -64,22 +64,29 @@ dec_u(cbor_coder *d)
 	return dec_size(d, OPSIZE(0x18, d->p[-1]), dec_u_common);
 }
 
+static u64int signedmax = (2ULL<<63ULL) - 1;
+
 static cbor*
-dec_s_common(cbor_coder *d, u64int v)
+dec_n_common(cbor_coder *d, u64int v)
 {
-	return cbor_make_sint(d->alloc, ~v);
+	if(v > signedmax){
+		werrstr("negative out of range");
+		return nil;
+	}
+
+	return cbor_make_nint(d->alloc, v+1);
 }
 
 static cbor*
-dec_slit(cbor_coder *d)
+dec_nlit(cbor_coder *d)
 {
-	return dec_s_common(d, d->p[-1] - 0x20);
+	return dec_n_common(d, d->p[-1] - 0x20);
 }
 
 static cbor*
-dec_s(cbor_coder *d)
+dec_n(cbor_coder *d)
 {
-	return dec_size(d, OPSIZE(0x38, d->p[-1]), dec_s_common);
+	return dec_size(d, OPSIZE(0x38, d->p[-1]), dec_n_common);
 }
 
 static cbor*
@@ -348,34 +355,34 @@ static cbor *(*decfuns[256])(cbor_coder *d) = {
 [0x1b]	dec_u,
 
 /* major type 1 */
-[0x20]	dec_slit,
-[0x21]	dec_slit,
-[0x22]	dec_slit,
-[0x23]	dec_slit,
-[0x24]	dec_slit,
-[0x25]	dec_slit,
-[0x26]	dec_slit,
-[0x27]	dec_slit,
-[0x28]	dec_slit,
-[0x29]	dec_slit,
-[0x2a]	dec_slit,
-[0x2b]	dec_slit,
-[0x2c]	dec_slit,
-[0x2d]	dec_slit,
-[0x2e]	dec_slit,
-[0x2f]	dec_slit,
-[0x30]	dec_slit,
-[0x31]	dec_slit,
-[0x32]	dec_slit,
-[0x33]	dec_slit,
-[0x34]	dec_slit,
-[0x35]	dec_slit,
-[0x36]	dec_slit,
-[0x37]	dec_slit,
-[0x38]	dec_s,
-[0x39]	dec_s,
-[0x3a]	dec_s,
-[0x3b]	dec_s,
+[0x20]	dec_nlit,
+[0x21]	dec_nlit,
+[0x22]	dec_nlit,
+[0x23]	dec_nlit,
+[0x24]	dec_nlit,
+[0x25]	dec_nlit,
+[0x26]	dec_nlit,
+[0x27]	dec_nlit,
+[0x28]	dec_nlit,
+[0x29]	dec_nlit,
+[0x2a]	dec_nlit,
+[0x2b]	dec_nlit,
+[0x2c]	dec_nlit,
+[0x2d]	dec_nlit,
+[0x2e]	dec_nlit,
+[0x2f]	dec_nlit,
+[0x30]	dec_nlit,
+[0x31]	dec_nlit,
+[0x32]	dec_nlit,
+[0x33]	dec_nlit,
+[0x34]	dec_nlit,
+[0x35]	dec_nlit,
+[0x36]	dec_nlit,
+[0x37]	dec_nlit,
+[0x38]	dec_n,
+[0x39]	dec_n,
+[0x3a]	dec_n,
+[0x3b]	dec_n,
 
 /* major type 2 */
 [0x40]	dec_blit,

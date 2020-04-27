@@ -69,9 +69,9 @@ enc_u(cbor_coder *d, cbor *c, int justsize)
 }
 
 static ulong
-enc_s(cbor_coder *d, cbor *c, int justsize)
+enc_n(cbor_coder *d, cbor *c, int justsize)
 {
-	return enc_size(d, ~c->sint, 1<<5, justsize);
+	return enc_size(d, c->uint-1, 1<<5, justsize);
 }
 
 static ulong
@@ -175,6 +175,8 @@ enc_null(cbor_coder *d, cbor *c, int justsize)
 {
 	uchar *p;
 
+	(void)c;
+
 	if(justsize)
 		return 1;
 
@@ -241,7 +243,7 @@ enc_d(cbor_coder *d, cbor *c, int justsize)
 
 static encfun encfuns[] = {
 [CBOR_UINT]			enc_u,
-[CBOR_SINT]			enc_s,
+[CBOR_NINT]			enc_n,
 [CBOR_BYTE]			enc_byte,
 [CBOR_STRING]		enc_string,
 [CBOR_ARRAY]		enc_a,

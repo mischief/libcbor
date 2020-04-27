@@ -20,7 +20,7 @@ cbor_vunpack_array(cbor_allocator *a, cbor *array, char **fmt, va_list *va)
 		e = array->array[i];
 		c = **fmt;
 
-		switch(**fmt){
+		switch(c){
 		case '\0':
 			/* expected ']' */
 			abort();
@@ -123,11 +123,11 @@ cbor_vunpack(cbor_allocator *a, cbor *c, char **fmt, va_list *va)
 		*up = c->uint;
 		return 0;
 	case 'i':
-		if(c->type != CBOR_SINT)
+		sp = va_arg(*va, s64int*);
+
+		if(cbor_int(c, sp) < 0)
 			break;
 
-		sp = va_arg(*va, s64int*);
-		*sp = c->sint;
 		return 0;
 
 	case 'b':

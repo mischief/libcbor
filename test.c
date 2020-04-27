@@ -35,8 +35,8 @@ cbor_print(cbor *c, char *bp, char *be)
 	case CBOR_UINT:
 		return seprint(bp, be, "%llud", c->uint);
 
-	case CBOR_SINT:
-		return seprint(bp, be, "%lld", c->sint);
+	case CBOR_NINT:
+		return seprint(bp, be, "-%llud", c->uint+1);
 
 	case CBOR_BYTE:
 		return seprint(bp, be, "%.*H", c->len, c->byte);
@@ -107,7 +107,7 @@ cbor_fprint(int fd, cbor *c)
 
 	cbor_print(c, buf, buf+sizeof(buf));
 
-	fprint(2, "%s\n", buf);
+	fprint(fd, "%s\n", buf);
 }
 
 static char *tests[] = {
@@ -309,23 +309,69 @@ test_pack(void)
 {
 	int rv, glen;
 	char pr[512], *greet;
-	u64int u;
 	cbor *c;
 
-	//c = cbor_pack(&cbor_default_allocator, "d", 42.0);
-	c = cbor_pack(&cbor_default_allocator, "{sfsuss}", 2, "pi",3.14,6,"answer",42,8,"greeting",5,"hello");
+	u64int uv = (1ULL<<63ULL) + 42;
+	s64int svneg = -(1LL<<62LL) + 42;
+	s64int svpos = (1LL<<62LL) + 42;
+
+	c = cbor_pack(&cbor_default_allocator, "{sfsusssusisi}",
+		2, "pi",3.14,
+		6,"answer",42,
+		8,"greeting",5,"hello",
+		8,"unsigned",uv,
+		3,"neg",svneg,
+		3,"pos",svpos
+	);
 	assert(c != nil);
 
 	cbor_print(c, pr, pr+sizeof(pr));
 	fprint(2, "pack: %s\n", pr);
 
-	rv = cbor_unpack(&cbor_default_allocator, c, "{Ss}", "greeting", &glen, &greet);
+	u64int ruv;
+	s64int rsvneg, rsvpos;
+
+	rv = cbor_unpack(&cbor_default_allocator, c, "{SsSuSiSi}",
+		"greeting", &glen, &greet,
+		"unsigned", &ruv,
+		"neg", &rsvneg,
+		"pos", &rsvpos
+	);
+
 	assert(rv == 0);
-	fprint(2, "greet=%s\n", greet);
+	rv = strcmp(greet, "hello");
+	assert(rv == 0);
 	cbor_default_allocator.free(cbor_default_allocator.context, greet);
-	//assert(u == 42ULL);
+
+	assert(uv == ruv);
+	assert(svneg == rsvneg);
+	assert(svpos == rsvpos);
 
 	cbor_free(&cbor_default_allocator, c);
+}
+
+static void
+test_ints(void)
+{
+	s64int i, v;
+	int rv;
+	uchar buf[128];
+	cbor *cbo;
+
+	for(i = (2LL<<62LL)*-1; i < 2LL<<62LL-1; i += (2LL<<56LL)+3){
+		cbo = cbor_make_int(&cbor_default_allocator, i);
+		rv = cbor_encode(cbo, buf, sizeof(buf));
+		assert(rv >= 0);
+		cbor_free(&cbor_default_allocator, cbo);
+
+		cbo = cbor_decode(&cbor_default_allocator, buf, rv);
+		assert(cbo != nil);
+
+		assert(cbor_int(cbo, &v) >= 0);
+		assert(v == i);
+
+		cbor_free(&cbor_default_allocator, cbo);
+	}
 }
 
 static void
@@ -349,6 +395,7 @@ main(int argc, char *argv[])
 	test_decenc();
 	test_array();
 	test_pack();
+	test_ints();
 
 	exits(nil);
 }

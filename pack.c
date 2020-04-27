@@ -46,7 +46,7 @@ cbor_vpack(cbor_allocator *a, cbor **rc, char *fmt, va_list *va)
 		break;
 
 	case 'i':
-		c = cbor_make_sint(a, va_arg(*va, s64int));
+		c = cbor_make_int(a, va_arg(*va, s64int));
 		if(c == nil)
 			return -1;
 		break;

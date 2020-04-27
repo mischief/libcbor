@@ -16,7 +16,7 @@ cbor_free(cbor_allocator *a, cbor *c)
 		abort();
 
 	case CBOR_UINT:
-	case CBOR_SINT:
+	case CBOR_NINT:
 	case CBOR_NULL:
 	case CBOR_FLOAT:
 	case CBOR_DOUBLE:
@@ -97,18 +97,33 @@ cbor_make_uint(cbor_allocator *a, u64int v)
 }
 
 cbor*
-cbor_make_sint(cbor_allocator *a, s64int v)
+cbor_make_nint(cbor_allocator *a, s64int v)
 {
 	cbor *c;
+	u64int ui;
+
+	/* see RFC7049 Appendix C */
+
+	ui = v >> 63;
+	ui ^= v;
 
 	c = a->alloc(a->context, sizeof(*c));
 	if(c == nil)
 		return nil;
 
-	c->type = CBOR_SINT;
-	c->sint = v;
+	c->type = CBOR_NINT;
+	c->uint = ui;
 
 	return c;
+}
+
+cbor*
+cbor_make_int(cbor_allocator *a, s64int v)
+{
+	if(v >= 0)
+		return cbor_make_uint(a, v);
+
+	return cbor_make_nint(a, v);
 }
 
 static cbor*
@@ -322,4 +337,32 @@ cbor_make_double(cbor_allocator *a, double d)
 	c->d = d;
 
 	return c;
+}
+
+int
+cbor_int(cbor *c, s64int *v)
+{
+	switch(c->type){
+	case CBOR_UINT:
+		if(c->uint > (1ULL<<63ULL)-1){
+			werrstr("uint out of range for sint");
+			return -1;
+		}
+
+		*v = c->uint;
+		return 0;
+
+	case CBOR_NINT:
+		if(c->uint > (1ULL<<63ULL)-1){
+			werrstr("sint out of range for sint");
+			return -1;
+		}
+
+		*v = -(c->uint+1);
+
+		return 0;
+	}
+
+	werrstr("not an int");
+	return -1;
 }
